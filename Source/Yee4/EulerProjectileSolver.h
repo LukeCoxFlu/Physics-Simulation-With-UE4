@@ -16,6 +16,7 @@ public:
 	AEulerProjectileSolver();
 
 	FVector previousPos = FVector(0.0f, 0.0f, 0.0f);
+	float radius = 0;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Projectile")
 	FVector velocity = FVector(0.0f, 0.0f, 0.0f);
@@ -24,6 +25,17 @@ public:
 	float accelerationDueToGravity = -9.81f;
 
 	FVector constantForce = FVector(0.0f, 0.0f, 0.0f);
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sphere To Sphere Collision")
+	AActor* ImmobileSphere;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sphere To Sphere Collision")
+	float ImmobileSphereRadius = 0;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sphere To Sphere Collision")
+		float radiusasidhaouisdhf = 0;
+
+	FVector ImmobileSphereLocation = FVector(0.0f, 0.0f, 0.0f);
 
 protected:
 	// Called when the game starts or when spawned

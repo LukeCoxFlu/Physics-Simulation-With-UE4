@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ // Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "EulerProjectileSolver.h"
@@ -15,6 +15,22 @@ AEulerProjectileSolver::AEulerProjectileSolver()
 void AEulerProjectileSolver::BeginPlay()
 {
 	Super::BeginPlay();
+
+	{
+		FVector boxExtent = FVector(0.0f, 0.0f, 0.0f);
+		FVector Origin = FVector(0.0f, 0.0f, 0.0f);
+		GetActorBounds(false, Origin, boxExtent);
+		radius = boxExtent.X ;
+	}
+
+	if (ImmobileSphere)
+	{
+		FVector boxExtent = FVector(0.0f, 0.0f, 0.0f);
+		FVector Origin = FVector(0.0f, 0.0f, 0.0f);
+		ImmobileSphereLocation = ImmobileSphere->GetActorLocation();
+		ImmobileSphere->GetActorBounds(false, Origin, boxExtent);
+		ImmobileSphereRadius = boxExtent.X;
+	}
 	constantForce.Z = accelerationDueToGravity;
 }
 
@@ -23,9 +39,34 @@ void AEulerProjectileSolver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	previousPos = GetActorLocation();
-	FVector temp = previousPos + velocity;
-	SetActorLocation(temp);
-	velocity = velocity + constantForce;
+	float collisionMultiplier = 1;
+	
+	// Collisions ImmobileSphere
+	if (ImmobileSphere)
+	{
+
+		FVector V = velocity * DeltaTime;
+		FVector A = previousPos - ImmobileSphereLocation;
+		float q = acosf(FVector().DotProduct(A, V)/ (A.Size() * V.Size()));
+	
+		float d = sinf(q) * A.Size();
+
+		// should work with d instead of A.Size() but it doesnt work as well. Also The distanceses are diameters I think which shouldnt work but it does
+		if (A.Size() < radius + ImmobileSphereRadius)
+		{
+			float e = sqrtf((radius + ImmobileSphereRadius) * (radius + ImmobileSphereRadius) - d * d);
+			float sizeVC = cosf(q) * A.Size() - e;
+			//collisionMultiplier = (sizeVC / V.Size())
+			SetActorLocation(previousPos + (V * (sizeVC / V.Size())));
+			velocity = FVector(100.0f, 0, 100.0f);
+		}
+	}
+
+	velocity = velocity + (constantForce * DeltaTime);
+	SetActorLocation(previousPos + (velocity * DeltaTime));
+
+
+
 
 	//pos is * 123
 	// gravity * 15.384
