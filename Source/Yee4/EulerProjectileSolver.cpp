@@ -44,8 +44,8 @@ void AEulerProjectileSolver::Tick(float DeltaTime)
 	// Collisions ImmobileSphere
 	if (ImmobileSphere)
 	{
-
-		FVector V = velocity * DeltaTime;
+		//Add loc to velocity 
+		FVector V = (velocity * DeltaTime) ;
 		FVector A = previousPos - ImmobileSphereLocation;
 		float q = acosf(FVector().DotProduct(A, V)/ (A.Size() * V.Size()));
 	
@@ -58,7 +58,7 @@ void AEulerProjectileSolver::Tick(float DeltaTime)
 			float sizeVC = cosf(q) * A.Size() - e;
 			//collisionMultiplier = (sizeVC / V.Size())
 			SetActorLocation(previousPos + (V * (sizeVC / V.Size())));
-			velocity = FVector(100.0f, 0, 100.0f);
+			velocity = FVector(0.0f, 0.0f, 0.0f);
 		}
 	}
 
