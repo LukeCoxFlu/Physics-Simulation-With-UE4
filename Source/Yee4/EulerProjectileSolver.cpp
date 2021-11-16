@@ -20,7 +20,7 @@ void AEulerProjectileSolver::BeginPlay()
 		FVector boxExtent = FVector(0.0f, 0.0f, 0.0f);
 		FVector Origin = FVector(0.0f, 0.0f, 0.0f);
 		GetActorBounds(false, Origin, boxExtent);
-		radius = boxExtent.X ;
+		radius = boxExtent.X / 2;
 	}
 
 	if (ImmobileSphere)
@@ -29,7 +29,7 @@ void AEulerProjectileSolver::BeginPlay()
 		FVector Origin = FVector(0.0f, 0.0f, 0.0f);
 		ImmobileSphereLocation = ImmobileSphere->GetActorLocation();
 		ImmobileSphere->GetActorBounds(false, Origin, boxExtent);
-		ImmobileSphereRadius = boxExtent.X;
+		ImmobileSphereRadius = boxExtent.X / 2;
 	}
 	constantForce.Z = accelerationDueToGravity;
 }
@@ -39,31 +39,42 @@ void AEulerProjectileSolver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	previousPos = GetActorLocation();
-	float collisionMultiplier = 1;
+	FVector FinalLocation;
 	
 	// Collisions ImmobileSphere
+
+
+	FVector V = velocity - previousPos;
+
+	FVector A = ImmobileSphereLocation - previousPos;
+
+	velocity = velocity + (constantForce * DeltaTime);
+	FinalLocation = previousPos + (velocity * DeltaTime);
+
 	if (ImmobileSphere)
 	{
-		//Add loc to velocity 
-		FVector V = (velocity * DeltaTime) ;
-		FVector A = previousPos - ImmobileSphereLocation;
-		float q = acosf(FVector().DotProduct(A, V)/ (A.Size() * V.Size()));
+		//Add loc to velocity
+		float dot = A.X * V.X + A.Y * V.Y + A.Z * V.Z;
+		float q = acosf(dot / (A.Size() * V.Size()));
 	
 		float d = sinf(q) * A.Size();
 
 		// should work with d instead of A.Size() but it doesnt work as well. Also The distanceses are diameters I think which shouldnt work but it does
-		if (A.Size() < radius + ImmobileSphereRadius)
+		if (d < radius + ImmobileSphereRadius)
 		{
-			float e = sqrtf((radius + ImmobileSphereRadius) * (radius + ImmobileSphereRadius) - d * d);
+			float e = sqrtf((radius + ImmobileSphereRadius) * (radius + ImmobileSphereRadius) - (d * d));
 			float sizeVC = cosf(q) * A.Size() - e;
-			//collisionMultiplier = (sizeVC / V.Size())
-			SetActorLocation(previousPos + (V * (sizeVC / V.Size())));
-			velocity = FVector(0.0f, 0.0f, 0.0f);
+			
+			
+			
+			FinalLocation = previousPos + (V / V.Size() * sizeVC);
+			
+			velocity = FVector(0, 0, 0);
 		}
 	}
 
-	velocity = velocity + (constantForce * DeltaTime);
-	SetActorLocation(previousPos + (velocity * DeltaTime));
+
+	SetActorLocation(FinalLocation);
 
 
 
