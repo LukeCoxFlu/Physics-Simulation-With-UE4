@@ -16,20 +16,12 @@ void AEulerProjectileSolver::BeginPlay()
 {
 	Super::BeginPlay();
 
-	{
-		FVector boxExtent = FVector(0.0f, 0.0f, 0.0f);
-		FVector Origin = FVector(0.0f, 0.0f, 0.0f);
-		GetActorBounds(false, Origin, boxExtent);
-		radius = boxExtent.X / 2;
-	}
+	radius = GetActorScale().X * 50;
 
 	if (ImmobileSphere)
 	{
-		FVector boxExtent = FVector(0.0f, 0.0f, 0.0f);
-		FVector Origin = FVector(0.0f, 0.0f, 0.0f);
 		ImmobileSphereLocation = ImmobileSphere->GetActorLocation();
-		ImmobileSphere->GetActorBounds(false, Origin, boxExtent);
-		ImmobileSphereRadius = boxExtent.X / 2;
+		ImmobileSphereRadius = ImmobileSphere->GetActorScale().X * 50;
 	}
 	constantForce.Z = accelerationDueToGravity;
 }
@@ -42,11 +34,10 @@ void AEulerProjectileSolver::Tick(float DeltaTime)
 	FVector FinalLocation;
 	
 	// Collisions ImmobileSphere
-
-
-	FVector V = velocity - previousPos;
+	FVector V = (velocity * DeltaTime) - previousPos;
 
 	FVector A = ImmobileSphereLocation - previousPos;
+
 
 	velocity = velocity + (constantForce * DeltaTime);
 	FinalLocation = previousPos + (velocity * DeltaTime);
@@ -58,18 +49,16 @@ void AEulerProjectileSolver::Tick(float DeltaTime)
 		float q = acosf(dot / (A.Size() * V.Size()));
 	
 		float d = sinf(q) * A.Size();
-
 		// should work with d instead of A.Size() but it doesnt work as well. Also The distanceses are diameters I think which shouldnt work but it does
 		if (d < radius + ImmobileSphereRadius)
 		{
-			float e = sqrtf((radius + ImmobileSphereRadius) * (radius + ImmobileSphereRadius) - (d * d));
-			float sizeVC = cosf(q) * A.Size() - e;
-			
-			
-			
-			FinalLocation = previousPos + (V / V.Size() * sizeVC);
-			
+			//Collision Currently works the bellow code has some error in it
+			float e = sqrtf(((radius + ImmobileSphereRadius) * (radius + ImmobileSphereRadius)) - (d * d));
+			float sizeVC = (cosf(q) * A.Size()) - e;
+			FVector Vc = (V / V.Size()) * sizeVC;
+	
 			velocity = FVector(0, 0, 0);
+			FinalLocation = previousPos + Vc;
 		}
 	}
 

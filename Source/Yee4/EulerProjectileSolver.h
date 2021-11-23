@@ -33,7 +33,7 @@ public:
 	float ImmobileSphereRadius = 0;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Sphere To Sphere Collision")
-	float radiusasidhaouisdhf = 0;
+	FVector rasamas = FVector(0.0f, 0.0f, 0.0f);
 
 	FVector ImmobileSphereLocation = FVector(0.0f, 0.0f, 0.0f);
 
