@@ -37,6 +37,7 @@ void ATestActor::Tick(float DeltaTime)
 
 	
 	float newX = initialPosition.X + (initialVelocity.X * T);
+	float newY = initialPosition.Y + (initialPosition.Y * T);
 	float newZ = initialPosition.Z + (initialVelocity.Z * T) + ((accerlerationDueToGravity * T * T) / 2);
 
 	//if(GEngine)
@@ -45,7 +46,7 @@ void ATestActor::Tick(float DeltaTime)
 	
 	
 	
-	MoveActor(FVector(newX, initialPosition.Y, newZ));
+	MoveActor(FVector(newX, newY, newZ));
 
 
 }
