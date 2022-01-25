@@ -22,8 +22,16 @@ class YEE4_API APhysicMasterSolver : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APhysicMasterSolver();
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere , Category = "Genral")
+	TArray<AActor*> ListOfPhysObjects;
 	
 	// Changables
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
+	bool StaticObj = false;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
+	bool DebugOptionOn = false;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
 	ENUM_RIGIDBODY_TYPES RigidBody_Types;
@@ -35,9 +43,11 @@ public:
 	FVector spawnedVelocity = FVector(0.0f, 0.0f, 0.0f);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
-	float accelerationDueToGravity = -9.81f;
+	float accelerationDueToGravity = -400;
 
 	virtual void Tick(float DeltaTime) override;
+
+	float GetRadius() const;
 
 private:
 	// UE4 genralised Components
@@ -50,18 +60,21 @@ private:
 	class UStaticMeshComponent* PhysicsObject = nullptr;
 
 	// Solver Properties (Always changing as I make it more officiant 
-
-	FVector AccelerationForce = FVector(0.0f, 0.0f, 0.0f);
+	
 	FVector previousPos = FVector(0.0f, 0.0f, 0.0f);
 
 	void NewtonianMotion(float deltaTime);
 	float NM_Time = 0;
-	
+
+	void debugValues(float DeltaTime);
 
 protected:
 
 	// Item Properties
 	FVector velocity = FVector(0.0f, 0.0f, 0.0f);
+	FVector AccelerationForce = FVector(0.0f, 0.0f, 0.0f);
+	
+	// List of other items
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -2,6 +2,8 @@
 
 
 #include "PhysicMasterSolver.h"
+#include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APhysicMasterSolver::APhysicMasterSolver()
@@ -21,12 +23,20 @@ APhysicMasterSolver::APhysicMasterSolver()
 void APhysicMasterSolver::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APhysicMasterSolver::StaticClass(), ListOfPhysObjects);
+	ListOfPhysObjects.Remove(this);
+	
 	
 	AccelerationForce.Z = accelerationDueToGravity;
 	previousPos = GetActorLocation();
 
 	velocity = spawnedVelocity;
 
+	if(PhysicsObject->GetStaticMesh() == nullptr)
+	{
+		if(GEngine) GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("No set Mesh on!")); 
+	}
 	
 }
 
@@ -34,12 +44,85 @@ void APhysicMasterSolver::BeginPlay()
 void APhysicMasterSolver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if(StaticObj) return;
 	if(IsNewtonian)
 	{
 		NewtonianMotion(DeltaTime);
 		return;
 	}
 
+	if(DebugOptionOn) debugValues(DeltaTime);
+	//
+	if(!(RigidBody_Types == ENUM_RIGIDBODY_TYPES::RT_Plane))
+	{
+		for (AActor* Object : ListOfPhysObjects)
+		{
+			APhysicMasterSolver* CompatableObject = Cast<APhysicMasterSolver>(Object);
+			if(CompatableObject != nullptr)
+			{
+				// check if sphere, if so do sphere to sphere collision
+				if(CompatableObject->RigidBody_Types == ENUM_RIGIDBODY_TYPES::RT_Sphere)
+				{
+					FVector P1 = GetActorLocation();
+					FVector P2 = CompatableObject->GetActorLocation();
+					FVector V1 = (velocity + AccelerationForce * DeltaTime) * DeltaTime;
+					FVector V2 = (CompatableObject->velocity + CompatableObject->AccelerationForce * DeltaTime) * DeltaTime ;
+					float r1 = GetRadius();
+					float r2 = CompatableObject->GetRadius();
+
+					float deltaXp = P1.X - P2.X;
+					float deltaYp = P1.Y - P2.Y;
+					float deltaZp = P1.Z - P2.Z;
+
+					float deltaXv = V1.X - V2.X;
+					float deltaYv = V1.Y - V2.Y;
+					float deltaZv = V1.Z - V2.Z;
+					
+					float A = (deltaXv * deltaXv) + (deltaYv * deltaYv) + (deltaZv * deltaZv);
+					float B = (2 * deltaXp * deltaXv) + (2 * deltaYp * deltaYv) + (2 * deltaZp * deltaZv);
+					float C = ((deltaXp * deltaXp) + (deltaYp * deltaYp) + (deltaZp * deltaZp)) - ((r1 + r2) * (r1 + r2));
+
+					float discriminant = (B*B) - (4*A*C);
+					
+					if ( discriminant > 0)
+					{
+						float minusT = ( -B - sqrt( discriminant)) / (2 * A);
+						float plusT = ( -B + sqrt( discriminant)) / (2 * A);
+						float T = minusT < plusT ? minusT : plusT;
+
+						//Checking if it collides within this frame
+						if(T < 1 && T > 0)
+						{
+							SetActorLocation(P1 + (T*V1));
+							velocity.Y = -velocity.Y;
+
+							CompatableObject->SetActorLocation(P2 + (T*V2));
+							CompatableObject->velocity.Y = -CompatableObject->velocity.Y;
+						}
+					}
+					else
+					{
+						//if(GEngine) GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Not Colliding")); 
+					}
+				}
+				// check if plane, then do sphere to plane collision
+				else if(CompatableObject->RigidBody_Types == ENUM_RIGIDBODY_TYPES::RT_Plane)
+				{
+					if(CompatableObject->StaticObj)
+					{
+						
+						DrawDebugLine(GetWorld(), CompatableObject->GetActorLocation(), CompatableObject->GetActorLocation() + (CompatableObject->GetActorForwardVector() * CompatableObject->PhysicsObject->Bounds.SphereRadius), FColor::Black,true,-1,0,10);
+					}
+				}
+				else
+				{
+					if(GEngine) GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("No set type on!")); 
+				}
+			}
+		}
+	}
+	
 	//Semi - Explicit Euler Motion
 	const FVector PositionN0 = GetActorLocation();
 	velocity = velocity + AccelerationForce * DeltaTime;
@@ -54,4 +137,15 @@ void APhysicMasterSolver::NewtonianMotion(float deltaTime)
 	const float NewY = previousPos.Y + (spawnedVelocity.Y * NM_Time);
 	const float NewZ = previousPos.Z + (spawnedVelocity.Z * NM_Time) + ((accelerationDueToGravity * NM_Time * NM_Time) / 2);
 	SetActorLocation(FVector(NewX, NewY, NewZ));
+}
+
+float APhysicMasterSolver::GetRadius() const
+{
+	return PhysicsObject->Bounds.SphereRadius;
+}
+
+void APhysicMasterSolver::debugValues(float DeltaTime)
+{
+	DrawDebugCircle(GetWorld(), GetActorLocation(), GetRadius(), 50, FColor::Red, false, DeltaTime);
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (velocity + AccelerationForce * DeltaTime) * DeltaTime, FColor::Cyan, false, DeltaTime);
 }
