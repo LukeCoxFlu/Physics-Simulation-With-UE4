@@ -2,6 +2,8 @@
 
 
 #include "PhysicMasterSolver.h"
+#include <math.h>
+
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -111,8 +113,33 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 				{
 					if(CompatableObject->StaticObj)
 					{
+					    FVector V = (velocity + AccelerationForce * DeltaTime) * DeltaTime;
+						FVector Normal = FVector::CrossProduct(CompatableObject->PhysicsObject->GetForwardVector(),CompatableObject->PhysicsObject->GetRightVector());
+						DrawDebugLine(GetWorld(), CompatableObject->GetActorLocation(), CompatableObject->GetActorLocation() + (Normal * 100), FColor::Black,false,0.2f,0,10);
+
 						
-						DrawDebugLine(GetWorld(), CompatableObject->GetActorLocation(), CompatableObject->GetActorLocation() + (CompatableObject->GetActorForwardVector() * CompatableObject->PhysicsObject->Bounds.SphereRadius), FColor::Black,true,-1,0,10);
+						if(AngleBetweenTwoVectors(Normal, - V) < 90)
+						{
+							FVector k = CompatableObject->GetActorLocation();
+							FVector P = GetActorLocation() - k; //Check if wrong way around
+								
+							float q1 = AngleBetweenTwoVectors(Normal,P);
+							float q2 = (90 - q1) * (3.14159 / 180); //In to radians
+
+							float d = sinf(q2) * P.Size() ;
+
+							float s = AngleBetweenTwoVectors(V, -Normal) * (3.14159 / 180); //In to radians
+							float r = GetRadius();
+							
+							float VC = (d - r) / (cosf(s));
+							
+							if(VC <= V.Size())
+							{
+								V.Normalize();
+								SetActorLocation(GetActorLocation() + (V * VC));
+								velocity = - velocity;
+							}
+						}
 					}
 				}
 				else
@@ -148,4 +175,12 @@ void APhysicMasterSolver::debugValues(float DeltaTime)
 {
 	DrawDebugCircle(GetWorld(), GetActorLocation(), GetRadius(), 50, FColor::Red, false, DeltaTime);
 	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (velocity + AccelerationForce * DeltaTime) * DeltaTime, FColor::Cyan, false, DeltaTime);
+}
+
+
+float APhysicMasterSolver::AngleBetweenTwoVectors(FVector a, FVector b)
+{
+	
+	float theta = acosf((FVector::DotProduct(a,b) / (a.Size() * b.Size())));
+	return theta * (180 / 3.14159);
 }

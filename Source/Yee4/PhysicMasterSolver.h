@@ -67,7 +67,8 @@ private:
 	float NM_Time = 0;
 
 	void debugValues(float DeltaTime);
-
+	float AngleBetweenTwoVectors(FVector a, FVector b);
+	
 protected:
 
 	// Item Properties
