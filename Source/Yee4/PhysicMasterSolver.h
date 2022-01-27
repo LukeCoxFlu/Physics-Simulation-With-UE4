@@ -34,6 +34,9 @@ public:
 	bool DebugOptionOn = false;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
+	float Mass = 1;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
 	ENUM_RIGIDBODY_TYPES RigidBody_Types;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
@@ -43,7 +46,10 @@ public:
 	FVector spawnedVelocity = FVector(0.0f, 0.0f, 0.0f);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
-	float accelerationDueToGravity = -400;
+	bool affectedByGravity = true;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Genral")
+	float drag = 0.005f;
 
 	virtual void Tick(float DeltaTime) override;
 
@@ -68,6 +74,8 @@ private:
 
 	void debugValues(float DeltaTime);
 	float AngleBetweenTwoVectors(FVector a, FVector b);
+
+	float accelerationDueToGravity = -400;
 	
 protected:
 

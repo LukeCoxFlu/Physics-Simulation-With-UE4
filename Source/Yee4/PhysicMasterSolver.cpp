@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "DrawDebugHelpers.h"
+#include "physicsWorldSettings.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -28,9 +29,18 @@ void APhysicMasterSolver::BeginPlay()
 
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APhysicMasterSolver::StaticClass(), ListOfPhysObjects);
 	ListOfPhysObjects.Remove(this);
+
+	if(affectedByGravity)
+	{
+		AphysicsWorldSettings* controller =  Cast<AphysicsWorldSettings>(UGameplayStatics::GetActorOfClass(GetWorld(), AphysicsWorldSettings::StaticClass()));
+
+		if(controller != nullptr)
+		{
+			accelerationDueToGravity = controller->accelerationDueToGravity;
+			AccelerationForce.Z = accelerationDueToGravity;
+		}
+	}
 	
-	
-	AccelerationForce.Z = accelerationDueToGravity;
 	previousPos = GetActorLocation();
 
 	velocity = spawnedVelocity;
@@ -55,7 +65,8 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 	}
 
 	if(DebugOptionOn) debugValues(DeltaTime);
-	//
+
+	//Collisions
 	if(!(RigidBody_Types == ENUM_RIGIDBODY_TYPES::RT_Plane))
 	{
 		for (AActor* Object : ListOfPhysObjects)
@@ -72,6 +83,8 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 					FVector V2 = (CompatableObject->velocity + CompatableObject->AccelerationForce * DeltaTime) * DeltaTime ;
 					float r1 = GetRadius();
 					float r2 = CompatableObject->GetRadius();
+					float m1 = Mass;
+					float m2 = CompatableObject->Mass;
 
 					float deltaXp = P1.X - P2.X;
 					float deltaYp = P1.Y - P2.Y;
@@ -96,11 +109,31 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 						//Checking if it collides within this frame
 						if(T < 1 && T > 0)
 						{
-							SetActorLocation(P1 + (T*V1));
-							velocity.Y = -velocity.Y;
+							FVector ResultingP1 = P1 + (T*V1);
+							FVector ResultingP2 = P2 + (T*V2);
+							SetActorLocation(ResultingP1);
+							CompatableObject->SetActorLocation(ResultingP2);
+							// Code for figuring out resultant force sphere 2 using sphere 1
 
-							CompatableObject->SetActorLocation(P2 + (T*V2));
-							CompatableObject->velocity.Y = -CompatableObject->velocity.Y;
+							FVector V1b = velocity;
+							FVector V2b = CompatableObject->velocity;
+				
+							
+							FVector G = ResultingP1 - ResultingP2 ;
+							
+							float q = AngleBetweenTwoVectors(V1,G) * (3.14159 / 180); // in to radians
+
+							FVector PreportionOfVelocityVector = cosf(q) * velocity / m2;
+							
+							FVector V2a = (G / G.Size()) * PreportionOfVelocityVector.Size();
+
+							//Consivation of momentum calculation, derived from the sum of the two
+							//velocities before = the sum of the two velocities after
+							//Rearanged to find Velocity of sphere 1 after collision
+							FVector V1a =  ((V1b * m1) + (V2b * m2) - (V2a * m2)) /  m1;
+							
+							velocity = V1a;
+							CompatableObject->velocity = V2a;
 						}
 					}
 					else
@@ -115,7 +148,7 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 					{
 					    FVector V = (velocity + AccelerationForce * DeltaTime) * DeltaTime;
 						FVector Normal = FVector::CrossProduct(CompatableObject->PhysicsObject->GetForwardVector(),CompatableObject->PhysicsObject->GetRightVector());
-						DrawDebugLine(GetWorld(), CompatableObject->GetActorLocation(), CompatableObject->GetActorLocation() + (Normal * 100), FColor::Black,false,0.2f,0,10);
+						//DrawDebugLine(GetWorld(), CompatableObject->GetActorLocation(), CompatableObject->GetActorLocation() + (Normal * 100), FColor::Black,false,0.2f,0,10);
 
 						
 						if(AngleBetweenTwoVectors(Normal, - V) < 90)
@@ -137,7 +170,17 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 							{
 								V.Normalize();
 								SetActorLocation(GetActorLocation() + (V * VC));
-								velocity = - velocity;
+								
+								FVector uVelocityA =  velocity / velocity.Size();
+								FVector uNormal = Normal / Normal.Size();
+
+								FVector uVelocityB = (2 * uNormal * FVector::DotProduct(uNormal,-uVelocityA) + uVelocityA);
+
+								FVector VelocityB = uVelocityB * velocity.Size();
+								
+								velocity = VelocityB;
+
+								
 							}
 						}
 					}
@@ -149,6 +192,15 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 			}
 		}
 	}
+	// Adding air resistance
+	
+	velocity = velocity * (1 - drag);	
+	
+	//Clamping Velocity
+
+	if(velocity.Size() < 0.01) velocity = velocity * 0; 
+
+
 	
 	//Semi - Explicit Euler Motion
 	const FVector PositionN0 = GetActorLocation();
