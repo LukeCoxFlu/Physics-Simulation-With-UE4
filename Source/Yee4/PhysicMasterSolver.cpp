@@ -115,23 +115,25 @@ void APhysicMasterSolver::Tick(float DeltaTime)
 							CompatableObject->SetActorLocation(ResultingP2);
 							// Code for figuring out resultant force sphere 2 using sphere 1
 
-							FVector V1b = velocity;
-							FVector V2b = CompatableObject->velocity;
+							FVector V1b = CompatableObject->velocity;
+							FVector V2b = velocity;
 				
 							
 							FVector G = ResultingP1 - ResultingP2 ;
 							
-							float q = AngleBetweenTwoVectors(V1,G) * (3.14159 / 180); // in to radians
-
-							FVector PreportionOfVelocityVector = cosf(q) * velocity / m2;
+							float q = AngleBetweenTwoVectors(V1,G); // in to radians
 							
-							FVector V2a = (G / G.Size()) * PreportionOfVelocityVector.Size();
+							FVector F = (G / G.Size()) * V1b.Size();
 
+							FVector V2a = cosf(q) * F / m2;
+							
 							//Consivation of momentum calculation, derived from the sum of the two
 							//velocities before = the sum of the two velocities after
 							//Rearanged to find Velocity of sphere 1 after collision
 							FVector V1a =  ((V1b * m1) + (V2b * m2) - (V2a * m2)) /  m1;
-							
+
+							DrawDebugLine(GetWorld(), ResultingP2, ResultingP2 + V2a, FColor::Blue,false,0.5,0,6);
+							DrawDebugLine(GetWorld(), ResultingP1, ResultingP1 + V1a, FColor::Blue,false,0.5,0,6);
 							velocity = V1a;
 							CompatableObject->velocity = V2a;
 						}
