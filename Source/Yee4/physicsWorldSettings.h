@@ -6,6 +6,15 @@
 #include "GameFramework/Actor.h"
 #include "physicsWorldSettings.generated.h"
 
+
+UENUM(BlueprintType)
+enum class ENUM_COLLISION_TYPES : uint8
+{
+	CT_SPHERETOSPHERE      UMETA(DisplayName="SPHERE TO SPHERE"),
+	CT_SPHERETOPLANE        UMETA(DisplayName="SPHERE TO PLANE"),
+	RT_Nothing		UMETA(DisplayName="Non"),
+};
+
 UCLASS()
 class YEE4_API AphysicsWorldSettings : public AActor
 {
@@ -17,6 +26,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Custom Physics Solver")
 	float accelerationDueToGravity = -400;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Custom Physics Solver")
+	TMap<ENUM_COLLISION_TYPES, float> mapOfCollisionTypesToEnergyLoss;
 
 protected:
 	// Called when the game starts or when spawned

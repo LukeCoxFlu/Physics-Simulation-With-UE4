@@ -14,6 +14,7 @@ enum class ENUM_RIGIDBODY_TYPES : uint8
 	RT_Nothing		UMETA(DisplayName="Non"),
 };
 
+
 UCLASS()
 class YEE4_API APhysicMasterSolver : public AActor
 {
@@ -24,6 +25,7 @@ public:
 	APhysicMasterSolver();
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere , Category = "Genral")
 	TArray<AActor*> ListOfPhysObjects;
+
 	
 	// Changables
 
@@ -76,6 +78,9 @@ private:
 	float AngleBetweenTwoVectors(FVector a, FVector b);
 
 	float accelerationDueToGravity = -400;
+
+	float StSCollisionEnergyLoss = 0;
+	float StPCollisionEnergyLoss = 0;
 	
 protected:
 
